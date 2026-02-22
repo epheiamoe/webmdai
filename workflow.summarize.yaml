@@ -1,0 +1,35 @@
+# ===========================================
+# 文章摘要工作流示例
+# ===========================================
+
+name: 文章摘要示例
+description: 爬取文章并生成摘要汇总
+version: "1.0"
+
+stages:
+  # 阶段 1: 爬取文章
+  - name: 爬取文章
+    type: fetch
+    params:
+      source: taskfile
+      taskfile: articles.md
+      reader: jina
+      delay: 2.0
+
+  # 阶段 2: 生成摘要
+  - name: 生成摘要
+    type: llm
+    params:
+      model: default
+      prompt_template: summarize
+      file_pattern: "*.md"
+      output_suffix: "_summary"
+
+  # 阶段 3: 合并所有摘要
+  - name: 合并摘要
+    type: merge
+    params:
+      file_pattern: "*_summary_*.md"
+      sort_by: numeric
+      output: "摘要汇总.md"
+      header: "# 文章摘要汇总\n\n"

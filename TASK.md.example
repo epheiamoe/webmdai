@@ -1,0 +1,34 @@
+# 示例爬取任务
+
+这个文件展示了如何使用 `webmdai fetch from-task` 命令批量爬取网页。
+
+## 说明
+
+将本文件复制为 `TASK.md`，然后运行：
+
+```bash
+webmdai fetch from-task
+```
+
+或直接指定本文件：
+
+```bash
+webmdai fetch from-task TASK.md.example
+```
+
+## 要爬取的链接
+
+编辑下面的链接列表，替换为你需要爬取的 URL：
+
+- [Example Domain](https://example.com) - 示例网站
+- [Wikipedia 首页](https://www.wikipedia.org) - 维基百科
+
+## 其他格式也支持
+
+除了行内链接格式 `[文字](URL)`，以下格式也可以被识别：
+
+直接粘贴 URL: <https://example.com>
+
+或者引用格式：
+
+[GitHub]: https://github.com

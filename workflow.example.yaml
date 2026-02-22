@@ -1,0 +1,97 @@
+# ===========================================
+# 轻小说翻译工作流示例
+# ===========================================
+# 使用方式:
+#   1. 复制此文件为 workflow.yaml
+#   2. 创建 TASK.md 文件，包含要爬取的章节链接
+#   3. 运行: webmdai workflow run
+
+name: 轻小说翻译示例
+description: 爬取、清理、翻译、人名替换、合并的完整流程示例
+version: "1.0"
+
+# 全局变量
+variables:
+  novel_name: "示例轻小说"
+  author: "示例作者"
+  target_lang: "简体中文"
+
+# 工作流阶段
+stages:
+  # ========== 阶段 1: 爬取章节 ==========
+  - name: 爬取章节
+    type: fetch
+    enabled: true
+    on_error: stop
+    params:
+      source: taskfile
+      taskfile: TASK.md
+      reader: jina
+      delay: 1.5
+      timeout: 30
+
+  # ========== 阶段 2: 清理内容（关键！减少Token消耗）==========
+  - name: 清理原始内容
+    type: clean
+    enabled: true
+    on_error: skip
+    params:
+      file_pattern: "*.md"
+      # 使用预设规则
+      preset: "kakuyomu"
+      # 或从文件加载规则
+      # rules_file: "rules/my_rules.yaml"
+      min_content_length: 1000
+      output_suffix: "_cleaned"
+
+  # ========== 阶段 3: LLM翻译 ==========
+  - name: 翻译章节
+    type: llm
+    enabled: true
+    on_error: stop
+    params:
+      file_pattern: "*_cleaned_*.md"
+      output_suffix: "_zh"
+      model: default
+      # 从文件加载提示词（推荐）
+      prompt_file: "prompts/translate.txt"
+      # 或使用预设模板
+      # prompt_template: "translate"
+      temperature: 0.65
+      max_tokens: 4096
+
+  # ========== 阶段 4: 人名统一替换 ==========
+  - name: 人名替换
+    type: replace
+    enabled: true
+    on_error: skip
+    params:
+      file_pattern: "*_zh_*.md"
+      backup: true
+      # 内联定义替换规则
+      replacements:
+        "示例原名1": "统一译名1"
+        "示例原名2": "统一译名2"
+      # 或从文件加载
+      # replacements_file: "names/characters.json"
+
+  # ========== 阶段 5: 合并为全书 ==========
+  - name: 合并全书
+    type: merge
+    enabled: true
+    on_error: stop
+    params:
+      file_pattern: "*_zh_*.md"
+      sort_by: numeric
+      output: "${novel_name}_全书合并版.md"
+      header: |
+        # ${novel_name}
+        ## ${author}
+        
+        **翻译说明**：本翻译由AI自动生成，仅供个人学习使用。
+        
+      separator: "\n\n---\n\n"
+      add_chapter_headers: true
+      chapter_prefix: "第{num}章"
+      collect_files: true
+      collect_dir: "CollectedChapters"

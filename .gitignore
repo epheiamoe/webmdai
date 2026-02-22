@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# pytest
+.pytest_cache/
+.coverage
+
+# Project specific
+llm_output/
+TASK/                    # 爬取的任务输出目录
+*/ZhChapters*/          # 合并后的章节目录
+*_合并.md                # 合并后的文件
+*_cleaned.md             # 清理后的中间文件
+*_zh.md                  # 翻译后的中间文件
+*.log                    # 日志文件
+
+# Workflow specific
+workflow.yaml            # 用户自定义工作流（示例除外）
+TASK.md                  # 用户任务文件（示例除外）
+prompts/                 # 用户提示词目录
+rules/                   # 用户清理规则目录
+names/                   # 用户替换规则目录

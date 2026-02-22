@@ -1,0 +1,37 @@
+{
+  "default_model": "gpt4",
+  "models": {
+    "gpt4": {
+      "endpoint": "https://api.openai.com/v1",
+      "model": "gpt-4",
+      "key": "$OPENAI_API_KEY"
+    },
+    "gpt3": {
+      "endpoint": "https://api.openai.com/v1",
+      "model": "gpt-3.5-turbo",
+      "key": "$OPENAI_API_KEY"
+    },
+    "local": {
+      "endpoint": "http://localhost:8000/v1",
+      "model": "llama2",
+      "key": "dummy-key"
+    },
+    "custom": {
+      "endpoint": "https://your-api-endpoint.com/v1",
+      "model": "your-model-name",
+      "key": "your-api-key"
+    }
+  },
+  "fetch": {
+    "default_reader": "jina",
+    "timeout": 30,
+    "retry_times": 3,
+    "delay": 1.0,
+    "jina_api_key": null
+  },
+  "llm": {
+    "default_output_dir": "llm_output",
+    "max_tokens": 4000,
+    "temperature": 0.7
+  }
+}
