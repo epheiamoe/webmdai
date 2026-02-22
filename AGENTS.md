@@ -1,0 +1,155 @@
+# WebMDAI 项目 - Agent 经验教训
+
+## 严重事故记录
+
+### 事故 #1：误删用户数据
+
+**时间**: 2026-02-23  
+**责任人**: AI Agent (Kimi Code CLI)  
+**严重程度**: 🔴 严重
+
+#### 事故经过
+
+在帮助用户清理项目并推送到 GitHub 时，误删了用户桌面上的轻小说翻译文件夹 `TASK/`，包含 43 章已翻译的内容。
+
+**原因**:
+1. 之前在测试工作流功能时创建了测试用的 `TASK` 目录
+2. 误以为该目录是测试生成的临时文件
+3. 使用了 `Remove-Item -Recurse -Force TASK` 命令删除
+4. 没有先确认目录内容是否重要
+
+**后果**:
+- 用户 43 章轻小说翻译文件丢失
+- PowerShell rm 命令不经过回收站，无法恢复
+- 用户需要重新爬取和翻译
+
+#### 教训
+
+1. **永远不要假设文件不重要** - 即使看起来是临时文件，也可能包含用户数据
+2. **删除前必须确认** - 询问用户、列出目录内容、确认后再操作
+3. **优先使用移动而非删除** - 将文件移动到归档目录，而非直接删除
+4. **了解命令行为** - PowerShell 的 rm 不经过回收站，与文件资源管理器不同
+
+#### 整改措施
+
+1. ✅ 建立归档机制 - 所有删除操作改为移动到 `E:\Agent\files\archive\temp`
+2. ✅ 禁止直接使用 rm/Remove-Item - 统一使用移动操作
+3. ✅ 删除前二次确认 - 对于任何可能包含数据的目录
+4. ✅ 创建 AGENTS.md - 记录教训，提醒未来 Agent
+
+---
+
+## 项目结构说明
+
+### 关于两层 webmdai 目录
+
+这是标准的 Python 项目结构：
+
+```
+webmdai/                      # 项目根目录
+├── webmdai/                  # Python 包目录（源代码）
+│   ├── __init__.py
+│   ├── cli.py
+│   └── ...
+├── setup.py
+└── README.md
+```
+
+- **第一层**: 项目根目录，包含项目级文件（README, setup.py 等）
+- **第二层**: Python 包目录，安装后可通过 `import webmdai` 导入
+
+这是正确的结构，不需要修改。
+
+---
+
+## 开发规范
+
+### 文件操作规范
+
+✅ **应该做**:
+- 移动文件到归档目录而非删除
+- 操作前备份重要数据
+- 列出目录内容确认后再批量操作
+- 使用 `Test-Path` 确认文件/目录存在
+
+❌ **禁止做**:
+- 直接使用 `rm`, `Remove-Item`, `rmdir` 等删除命令
+- 使用 `-Force` 参数强制删除而不确认
+- 假设任何文件是"临时"或"可以删除的"
+- 在不清楚内容的情况下删除整个目录
+
+### 归档目录
+
+所有需要"删除"的文件，移动到：
+```
+E:\Agent\files\archive\temp\
+```
+
+移动命令示例：
+```powershell
+# 创建时间戳子目录
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$archiveDir = "E:\Agent\files\archive\temp\$timestamp"
+New-Item -ItemType Directory -Path $archiveDir -Force
+
+# 移动文件
+Move-Item -Path "要删除的文件/目录" -Destination $archiveDir
+```
+
+---
+
+## 命令使用指南
+
+### 危险命令（需要额外确认）
+
+| 命令 | 危险等级 | 替代方案 |
+|------|---------|---------|
+| `rm`, `Remove-Item` | 🔴 高 | `Move-Item` 到归档目录 |
+| `rmdir`, `rd` | 🔴 高 | `Move-Item` 到归档目录 |
+| `>` 重定向覆盖 | 🟡 中 | 先备份原文件 |
+| `mv`, `Move-Item` 覆盖 | 🟡 中 | 检查目标是否存在 |
+
+### 安全删除流程
+
+```powershell
+# 1. 确认路径
+$target = "C:\path\to\directory"
+
+# 2. 列出内容确认
+Get-ChildItem $target
+
+# 3. 询问用户确认
+# "确认删除 $target 吗？包含 X 个文件"
+
+# 4. 创建归档目录
+$archive = "E:\Agent\files\archive\temp\$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+New-Item -ItemType Directory -Path $archive -Force
+
+# 5. 移动而非删除
+Move-Item -Path $target -Destination $archive
+```
+
+---
+
+## 用户数据保护
+
+### 常见用户数据位置
+
+- `C:\Users\<用户名>\Desktop\` - 桌面文件
+- `C:\Users\<用户名>\Documents\` - 文档
+- `C:\Users\<用户名>\Downloads\` - 下载
+- 任何包含以下名称的目录：
+  - `novel`, `book`, `translation`, `work`, `project`
+  - `TASK`, `task`, `temp`, `tmp`, `backup`
+
+### 处理原则
+
+1. **默认所有文件都重要** - 直到被证明是临时文件
+2. **先询问再操作** - 特别是删除操作
+3. **保留备份** - 修改前创建备份
+4. **可恢复性** - 使用移动而非删除，保留恢复可能
+
+---
+
+*最后更新: 2026-02-23*  
+*创建原因: 记录误删用户数据事故，防止再次发生*
