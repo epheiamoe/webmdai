@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Custom prompt support via YAML files in `prompts/` directory
+  - Load custom tasks from `prompts/*.yaml`
+  - Override built-in tasks via YAML
+  - Support LLM parameters: temperature, top_p, max_tokens, presence_penalty, frequency_penalty
 - Smart API key reuse: When adding models with same endpoint, automatically reuse existing key if not provided
 - New pipe commands for Unix-style pipeline processing:
   - `webmdai fetch pipe` - Fetch URLs from stdin
