@@ -95,10 +95,20 @@ class BaseReader(ABC):
                 )
                 response.raise_for_status()
                 return response
+            except requests.Timeout as e:
+                last_error = e
+                wait_time = 2 ** attempt
+                if attempt < self.retry_times - 1:
+                    print(f"  请求超时，{wait_time}秒后第{attempt + 2}次重试...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"  请求超时，已重试{self.retry_times}次，放弃")
             except requests.RequestException as e:
                 last_error = e
+                wait_time = 2 ** attempt
                 if attempt < self.retry_times - 1:
-                    time.sleep(2 ** attempt)  # 指数退避
+                    print(f"  请求失败: {str(e)[:50]}，{wait_time}秒后重试...")
+                    time.sleep(wait_time)
         
         raise last_error
 

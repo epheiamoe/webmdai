@@ -8,6 +8,19 @@ import os
 from pathlib import Path
 from typing import Dict, Optional, Any
 
+# 尝试加载 .env 文件
+try:
+    from dotenv import load_dotenv
+    # 加载当前目录下的 .env 文件
+    load_dotenv()
+    # 加载 ~/.webmdai/.env 文件（如果存在）
+    webmdai_env = Path.home() / ".webmdai" / ".env"
+    if webmdai_env.exists():
+        load_dotenv(webmdai_env)
+except ImportError:
+    # python-dotenv 未安装，跳过
+    pass
+
 
 class Config:
     """配置管理类"""

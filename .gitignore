@@ -25,6 +25,7 @@ venv/
 .venv/
 ENV/
 env/
+.env
 
 # IDE
 .vscode/
@@ -51,3 +52,9 @@ TASK.md                  # 用户任务文件（示例除外）
 prompts/                 # 用户提示词目录
 rules/                   # 用户清理规则目录
 names/                   # 用户替换规则目录
+
+# Test files (added by AI tester)
+test_*/                  # 测试生成的目录
+test_*.md                # 测试任务文件
+test_*.yaml              # 测试工作流文件
+test_*.json              # 测试配置文件

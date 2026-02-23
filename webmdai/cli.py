@@ -223,6 +223,46 @@ def fetch_from_task(ctx, taskfile, reader, separate, together, both, name):
     _execute_fetch(ctx, urls, task_name, reader, separate, together, both)
 
 
+@fetch_cmd.command(name="pipe")
+@click.option('-n', '--name', required=True, help='任务名称')
+@click.option('-r', '--reader', default='jina', help='爬取服务商')
+@click.option('-s', '--separate', is_flag=True, help='每个网页保存为单独文件')
+@click.option('-t', '--together', is_flag=True, help='所有网页合并为一个文件')
+@click.option('-st', 'both', is_flag=True, help='同时生成单独文件和合并文件')
+@pass_context
+def fetch_pipe(ctx, name, reader, separate, together, both):
+    """从标准输入读取URL并爬取
+    
+    示例:
+        echo "https://example.com" | webmdai fetch pipe -n mytask
+        cat urls.txt | webmdai fetch pipe -n mytask -st
+    """
+    import sys
+    
+    # 从stdin读取URL
+    urls = []
+    print(f"{Fore.CYAN}=== 从管道读取URL ==={Style.RESET_ALL}")
+    print("提示: 每行输入一个URL，输入完成后按Ctrl+D(Unix)或Ctrl+Z+Enter(Windows)\n")
+    
+    for line in sys.stdin:
+        line = line.strip()
+        if line and not line.startswith('#'):
+            urls.append(line)
+    
+    if not urls:
+        print(f"{Fore.YELLOW}没有从管道读取到URL{Style.RESET_ALL}")
+        return
+    
+    print(f"读取到 {len(urls)} 个URL\n")
+    
+    # 确定输出模式
+    if not separate and not together and not both:
+        both = True
+    
+    # 执行爬取
+    _execute_fetch(ctx, urls, name, reader, separate, together, both)
+
+
 def _execute_fetch(ctx, urls, task_name, reader_name, separate, together, both):
     """执行爬取操作"""
     print(f"\n{Fore.CYAN}开始爬取...{Style.RESET_ALL}")
@@ -485,6 +525,64 @@ def deal_batch(ctx, directory, mode, find, replace, preview, no_git):
     print(f"\n{Fore.GREEN}处理完成: {stats['total_changes']} 处修改{Style.RESET_ALL}")
 
 
+@deal_cmd.command(name="pipe")
+@click.option('--text', 'mode', flag_value='text', help='普通文本模式（默认）')
+@click.option('--re', 'mode', flag_value='regex', help='正则表达式模式')
+@click.option('-f', '--find', required=True, help='查找内容')
+@click.option('-r', '--replace', default='', help='替换内容（留空表示删除）')
+@click.option('-o', '--output', help='输出文件路径（默认输出到stdout）')
+def deal_pipe(mode, find, replace, output):
+    """从标准输入读取内容进行文本替换
+    
+    示例:
+        echo "hello world" | webmdai deal pipe -f "world" -r "Python"
+        cat article.md | webmdai deal pipe -f "广告文字" --re -o cleaned.md
+        echo "123abc" | webmdai deal pipe --re -f "\\d+" -r "[数字]"
+    """
+    import sys
+    import re
+    
+    # 从stdin读取内容
+    print(f"{Fore.CYAN}=== 从管道读取内容 ==={Style.RESET_ALL}")
+    print("提示: 输入内容，完成后按Ctrl+D(Unix)或Ctrl+Z+Enter(Windows)\n")
+    
+    content = sys.stdin.read()
+    
+    if not content:
+        print(f"{Fore.YELLOW}没有从管道读取到内容{Style.RESET_ALL}")
+        return
+    
+    print(f"读取到 {len(content)} 字符")
+    print(f"模式: {'正则表达式' if mode == 'regex' else '普通文本'}")
+    print(f"查找: {find}")
+    print(f"替换: {replace if replace else '(删除)'}\n")
+    
+    # 执行替换
+    try:
+        if mode == 'regex':
+            new_content = re.sub(find, replace, content, flags=re.MULTILINE)
+            count = len(re.findall(find, content, flags=re.MULTILINE))
+        else:
+            new_content = content.replace(find, replace)
+            count = content.count(find)
+        
+        if output:
+            # 保存到文件
+            output_path = Path(output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            print(f"{Fore.GREEN}结果已保存: {output_path} ({count} 处修改){Style.RESET_ALL}")
+        else:
+            # 输出到stdout
+            print(f"{Fore.GREEN}=== 处理结果 ({count} 处修改) ==={Style.RESET_ALL}\n")
+            print(new_content)
+    except re.error as e:
+        print(f"{Fore.RED}正则表达式错误: {e}{Style.RESET_ALL}")
+    except Exception as e:
+        print(f"{Fore.RED}处理失败: {e}{Style.RESET_ALL}")
+
+
 # ========== LLM 命令 ==========
 
 @cli.group(name="llm")
@@ -656,6 +754,83 @@ def llm_batch(ctx, directory, model, task, separate, merge, prompt, output):
         else:
             output_path = handler.process_files_together(work_dir, task_obj, output_dir / f"merged_{task_obj.output_suffix}.md")
             print(f"{Fore.GREEN}完成！输出: {output_path}{Style.RESET_ALL}")
+    except Exception as e:
+        print(f"{Fore.RED}处理失败: {e}{Style.RESET_ALL}")
+
+
+@llm_cmd.command(name="pipe")
+@click.option('-m', '--model', help='模型别名（默认使用默认模型）')
+@click.option('-t', '--task', help='任务类型（translate/summarize/explain/abstract）')
+@click.option('-p', '--prompt', help='自定义提示词（覆盖任务类型）')
+@click.option('-o', '--output', help='输出文件路径（默认输出到stdout）')
+@pass_context
+def llm_pipe(ctx, model, task, prompt, output):
+    """从标准输入读取内容并进行LLM处理
+    
+    示例:
+        echo "要翻译的内容" | webmdai llm pipe -t translate
+        cat article.md | webmdai llm pipe -t summarize -o summary.md
+        echo "解释这段代码" | webmdai llm pipe -p "请解释这段代码：{content}"
+    """
+    import sys
+    
+    # 从stdin读取内容
+    print(f"{Fore.CYAN}=== 从管道读取内容 ==={Style.RESET_ALL}")
+    print("提示: 输入内容，完成后按Ctrl+D(Unix)或Ctrl+Z+Enter(Windows)\n")
+    
+    content = sys.stdin.read()
+    
+    if not content.strip():
+        print(f"{Fore.YELLOW}没有从管道读取到内容{Style.RESET_ALL}")
+        return
+    
+    print(f"读取到 {len(content)} 字符\n")
+    
+    # 获取模型配置
+    if model:
+        model_config = ctx.config.get_model(model)
+    else:
+        model_config = ctx.config.get_default_model()
+    
+    if not model_config:
+        print(f"{Fore.RED}未配置模型，请先使用 'webmdai model add' 添加模型{Style.RESET_ALL}")
+        return
+    
+    # 获取任务
+    if prompt:
+        task_obj = create_custom_task(prompt, "custom")
+        print(f"任务: 自定义提示词")
+    elif task:
+        task_obj = get_preset_task(task)
+        if not task_obj:
+            print(f"{Fore.RED}未知任务: {task}{Style.RESET_ALL}")
+            print(f"可用任务: {', '.join(list_preset_tasks().keys())}")
+            return
+        print(f"任务: {task_obj.name} - {task_obj.description}")
+    else:
+        print(f"{Fore.RED}请指定任务类型(-t)或自定义提示词(-p){Style.RESET_ALL}")
+        return
+    
+    # 创建处理器
+    from .modules.llm_handler import create_llm_handler_from_config
+    handler = create_llm_handler_from_config(model_config, None)
+    
+    # 处理
+    try:
+        print(f"\n{Fore.CYAN}正在处理...{Style.RESET_ALL}\n")
+        result = handler.client.process_content(content, task_obj)
+        
+        if output:
+            # 保存到文件
+            output_path = Path(output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(result)
+            print(f"{Fore.GREEN}结果已保存: {output_path}{Style.RESET_ALL}")
+        else:
+            # 输出到stdout
+            print(f"{Fore.GREEN}=== 处理结果 ==={Style.RESET_ALL}\n")
+            print(result)
     except Exception as e:
         print(f"{Fore.RED}处理失败: {e}{Style.RESET_ALL}")
 

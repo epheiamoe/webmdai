@@ -557,11 +557,11 @@ class WorkflowEngine:
                 self.results.append(result)
                 
                 if result.success:
-                    print(f"{Fore.GREEN}✓ {result.message}{Style.RESET_ALL}")
+                    print(f"{Fore.GREEN}[OK] {result.message}{Style.RESET_ALL}")
                     # 保存阶段输出
                     self.context.stage_outputs[stage.name] = result
                 else:
-                    print(f"{Fore.RED}✗ {result.message}{Style.RESET_ALL}")
+                    print(f"{Fore.RED}[FAIL] {result.message}{Style.RESET_ALL}")
                     
                     if stage.on_error == "stop":
                         print(f"{Fore.RED}工作流中止{Style.RESET_ALL}")
