@@ -10,7 +10,7 @@ import click
 from colorama import Fore, Style, init
 
 from .config import get_config
-from .models.llm_task import get_preset_task, list_preset_tasks, create_custom_task
+from .models.llm_task import get_preset_task, list_preset_tasks, create_custom_task, get_task, list_all_tasks
 from .modules.fetcher import Fetcher, list_readers
 from .modules.processor import TextProcessor, interactive_preview_confirm
 from .modules.git_handler import GitHandler
@@ -628,15 +628,15 @@ def llm_interactive(ctx, directory, model, task, separate, merge, prompt, output
         task_obj = create_custom_task(prompt, "custom")
     elif task:
         # 使用预设任务
-        task_obj = get_preset_task(task)
+        task_obj = get_task(task)
         if not task_obj:
             print(f"{Fore.RED}未知任务: {task}{Style.RESET_ALL}")
-            print(f"可用任务: {', '.join(list_preset_tasks().keys())}")
+            print(f"可用任务: {', '.join(list_all_tasks().keys())}")
             return
     else:
         # 交互选择
         print(f"{Fore.YELLOW}选择任务类型:{Style.RESET_ALL}")
-        tasks = list_preset_tasks()
+        tasks = list_all_tasks()
         for i, (name, desc) in enumerate(tasks.items(), 1):
             print(f"  {i}. {name}: {desc}")
         print(f"  {len(tasks)+1}. 自定义提示词")
@@ -646,7 +646,7 @@ def llm_interactive(ctx, directory, model, task, separate, merge, prompt, output
             try:
                 idx = int(choice) - 1
                 if 0 <= idx < len(tasks):
-                    task_obj = get_preset_task(list(tasks.keys())[idx])
+                    task_obj = get_task(list(tasks.keys())[idx])
                     break
                 elif idx == len(tasks):
                     custom_prompt = input("\n输入自定义提示词 (使用 {content} 作为内容占位符):\n> ")
@@ -728,7 +728,7 @@ def llm_batch(ctx, directory, model, task, separate, merge, prompt, output):
     if prompt:
         task_obj = create_custom_task(prompt, "custom")
     else:
-        task_obj = get_preset_task(task)
+        task_obj = get_task(task)
         if not task_obj:
             print(f"{Fore.RED}未知任务: {task}{Style.RESET_ALL}")
             return
@@ -801,10 +801,10 @@ def llm_pipe(ctx, model, task, prompt, output):
         task_obj = create_custom_task(prompt, "custom")
         print(f"任务: 自定义提示词")
     elif task:
-        task_obj = get_preset_task(task)
+        task_obj = get_task(task)
         if not task_obj:
             print(f"{Fore.RED}未知任务: {task}{Style.RESET_ALL}")
-            print(f"可用任务: {', '.join(list_preset_tasks().keys())}")
+            print(f"可用任务: {', '.join(list_all_tasks().keys())}")
             return
         print(f"任务: {task_obj.name} - {task_obj.description}")
     else:

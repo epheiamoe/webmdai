@@ -74,14 +74,19 @@ class BaseLLMClient(ABC):
         Args:
             content: 要处理的内容
             task: LLM任务
-            **kwargs: 额外参数
+            **kwargs: 额外参数（会覆盖task中的参数）
             
         Returns:
             处理结果
         """
         prompt = task.format_prompt(content)
         messages = [{"role": "user", "content": prompt}]
-        return self.chat_completion(messages, **kwargs)
+        
+        # 合并task的参数（kwargs优先级更高）
+        task_params = task.get_llm_params()
+        task_params.update(kwargs)
+        
+        return self.chat_completion(messages, **task_params)
 
 
 class OpenAICompatibleClient(BaseLLMClient):
