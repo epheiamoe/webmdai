@@ -1,6 +1,6 @@
 # WebMDAI 项目 - Agent 经验教训
 
-> 这是Kimi code cli创建的文件，我觉得很有意思就留着了
+> 这是Kimi code cli创建的文件，我觉得很有意思就留着了。
 
 ## 严重事故记录
 
