@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Smart API key reuse: When adding models with same endpoint, automatically reuse existing key if not provided
 - New pipe commands for Unix-style pipeline processing:
   - `webmdai fetch pipe` - Fetch URLs from stdin
   - `webmdai llm pipe` - Process content from stdin with LLM
