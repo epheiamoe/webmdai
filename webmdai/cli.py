@@ -870,11 +870,41 @@ def model_list(ctx):
 @click.option('--name', required=True, help='模型别名')
 @click.option('--endpoint', required=True, help='API端点')
 @click.option('--model', 'model_name', required=True, help='模型名称')
-@click.option('--key', required=True, help='API密钥')
+@click.option('--key', required=False, help='API密钥（如不提供，会自动查找相同端点的现有模型复用密钥）')
 @pass_context
 def model_add(ctx, name, endpoint, model_name, key):
-    """添加新模型"""
+    """添加新模型
+    
+    示例:
+        # 添加新模型并提供密钥
+        webmdai model add --name gpt4 --endpoint https://api.openai.com/v1 --model gpt-4 --key sk-xxx
+        
+        # 添加同端点的新模型，自动复用密钥
+        webmdai model add --name gpt3 --endpoint https://api.openai.com/v1 --model gpt-3.5
+    """
     from .utils.validators import validate_model_config
+    
+    # 如果未提供密钥，尝试查找相同端点的现有模型复用密钥
+    if not key:
+        print(f"{Fore.YELLOW}未提供密钥，尝试查找相同端点的现有模型...{Style.RESET_ALL}")
+        
+        existing_models = ctx.config.list_models()
+        reused_key = None
+        reused_model_name = None
+        
+        for existing_name, existing_config in existing_models.items():
+            if existing_config.get('endpoint') == endpoint:
+                reused_key = existing_config.get('key')
+                reused_model_name = existing_name
+                break
+        
+        if reused_key:
+            key = reused_key
+            print(f"{Fore.GREEN}已复用模型 '{reused_model_name}' 的密钥{Style.RESET_ALL}")
+        else:
+            print(f"{Fore.RED}错误: 未找到相同端点的现有模型，请提供 --key 参数{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}提示: 使用 'webmdai model list' 查看已配置的模型{Style.RESET_ALL}")
+            return
     
     is_valid, error = validate_model_config(endpoint, model_name, key)
     if not is_valid:
