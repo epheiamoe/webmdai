@@ -43,7 +43,7 @@ pass_context = click.make_pass_decorator(Context, ensure=True)
 # ========== 主命令 ==========
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="webmdai")
+@click.version_option(version="0.2.0", prog_name="webmdai")
 @click.pass_context
 def cli(ctx):
     """webmdai - 网页内容爬取、文本处理和LLM处理命令行工具"""

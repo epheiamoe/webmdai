@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-23
+
 ### Added
 - Smart API key reuse: When adding models with same endpoint, automatically reuse existing key if not provided
 - New pipe commands for Unix-style pipeline processing:
@@ -62,5 +64,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Variable interpolation
   - Error handling strategies (stop/skip/ignore)
 
-[Unreleased]: https://github.com/epheiamoe/webmdai/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/epheiamoe/webmdai/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/epheiamoe/webmdai/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/epheiamoe/webmdai/releases/tag/v0.1.0
