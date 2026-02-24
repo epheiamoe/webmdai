@@ -36,6 +36,8 @@ setup(
         "click>=8.0.0",
         "gitpython>=3.1.0",
         "colorama>=0.4.4",
+        "pyyaml>=6.0.0",
+        "python-dotenv>=1.0.0",
     ],
     extras_require={
         "dev": [

@@ -34,6 +34,79 @@ pip install -e .
 - gitpython
 - colorama
 
+## 路径处理规则（重要！）
+
+> 🚀 **零基础用户？请先阅读 [零基础5分钟上手](doc_example/零基础5分钟上手.md)**
+
+### 核心规则：所有文件放在同一个目录
+
+webmdai中的所有相对路径都相对于**你运行命令时的当前目录**。为了避免路径问题，建议：
+
+```
+my_project/              ← 项目目录（你在这里运行命令）
+├── workflow.yaml        ← 工作流配置
+├── TASK.md             ← 任务文件
+├── prompts/            ← 提示词目录
+│   └── translate.txt
+└── （输出文件自动生成）
+```
+
+### 路径基准目录
+
+| 命令/场景 | 基准目录 | 说明 |
+|---------|---------|------|
+| `webmdai workflow run workflow.yaml` | workflow.yaml所在目录 | 自动推断 |
+| `webmdai workflow run workflow.yaml -d /path` | 指定目录 | 覆盖默认 |
+| `webmdai path info` | 当前目录 | 相对路径基准 |
+
+### 工作流中的相对路径
+
+在工作流配置中，所有相对路径都相对于**workflow.yaml文件所在目录**：
+
+```yaml
+stages:
+  - name: 爬取
+    type: fetch
+    params:
+      taskfile: "TASK.md"           # 相对于workflow.yaml所在目录
+  
+  - name: 翻译
+    type: llm
+    params:
+      prompt_file: "prompts/translate.txt"  # 相对于workflow.yaml所在目录
+  
+  - name: 替换
+    type: replace
+    params:
+      replacements_file: "names.json"      # 相对于workflow.yaml所在目录
+```
+
+### 路径调试工具
+
+遇到路径问题？使用 `webmdai path` 命令：
+
+```bash
+# 查看路径解析信息
+webmdai path info workflow.yaml
+
+# 检查工作流中所有路径
+webmdai path check workflow.yaml
+
+# 查看项目目录结构
+webmdai path tree
+```
+
+### 常见问题
+
+**Q：文件应该放在哪里？**
+A：全部放在同一个目录下！进入项目目录，所有文件都创建在这里。
+
+**Q：提示词文件找不到？**
+A：确保提示词文件在workflow.yaml同目录或子目录，使用 `webmdai path check` 检查。
+
+**Q：路径太复杂怎么办？**
+A：使用绝对路径最可靠，如 `prompt_file: "/full/path/to/prompts/translate.txt"`
+
 ## 快速开始
 
 > 🚀 **零基础用户？先看 [5分钟快速上手](QUICKSTART.md)**

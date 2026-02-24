@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # 
 
+## [0.3.1] - 2026-02-24
+
+### Added
+
+- **Path Debugging Tools** - New `webmdai path` command group
+  - `webmdai path info <path>` - Show path resolution details
+  - `webmdai path check <workflow.yaml>` - Validate all paths in workflow
+  - `webmdai path tree` - Display project directory structure
+
+- **Complete Examples Documentation** - New comprehensive examples
+  - `doc_example/零基础5分钟上手.md` - Beginner guide
+  - `doc_example/WEBMDAI全流程示例指南.md` - Full tutorial from basic to advanced
+  - `doc_example/快速开始脚本.sh` - One-click project setup
+
+### Fixed
+
+- **Dependency Consistency** - Fixed setup.py missing dependencies
+  - Added `pyyaml>=6.0.0` and `python-dotenv>=1.0.0` to install_requires
+
+- **Path Resolution Documentation** - Added clear path handling explanation
+  - Added "路径处理规则" section to README.md
+  - Explains working directory and relative path resolution
+  - Provides debugging tips for common path issues
+
 ## [0.3.0] - 2026-02-24
 
 ### Added
