@@ -2,7 +2,7 @@
 
 一个~~功能强大~~的Python命令行工具，提供网页内容爬取、文本处理和LLM处理三大功能模块。
 
-> 这是一个纯AI开发的小工具，请您不要抱有太多期待。毕竟它还把我翻译的内容给删了。。详见`AGENTS.md`
+> 这是一个纯AI开发的小工具，请您不要抱有太多期待。毕竟它还把我翻译的内容给删了。。详见`archive/AGENTS.md`
 > 
 > 欢迎提交PR和Issue，包括AI写的。
 > 
@@ -55,11 +55,11 @@ my_project/              ← 项目目录（你在这里运行命令）
 
 ### 路径基准目录
 
-| 命令/场景 | 基准目录 | 说明 |
-|---------|---------|------|
-| `webmdai workflow run workflow.yaml` | workflow.yaml所在目录 | 自动推断 |
-| `webmdai workflow run workflow.yaml -d /path` | 指定目录 | 覆盖默认 |
-| `webmdai path info` | 当前目录 | 相对路径基准 |
+| 命令/场景                                         | 基准目录              | 说明     |
+| --------------------------------------------- | ----------------- | ------ |
+| `webmdai workflow run workflow.yaml`          | workflow.yaml所在目录 | 自动推断   |
+| `webmdai workflow run workflow.yaml -d /path` | 指定目录              | 覆盖默认   |
+| `webmdai path info`                           | 当前目录              | 相对路径基准 |
 
 ### 工作流中的相对路径
 
@@ -71,12 +71,12 @@ stages:
     type: fetch
     params:
       taskfile: "TASK.md"           # 相对于workflow.yaml所在目录
-  
+
   - name: 翻译
     type: llm
     params:
       prompt_file: "prompts/translate.txt"  # 相对于workflow.yaml所在目录
-  
+
   - name: 替换
     type: replace
     params:
@@ -476,6 +476,7 @@ webmdai workflow run -v novel_name="我的小说"
 ```
 
 **工作目录自动推断规则：**
+
 - 如果不指定 `-d` 参数，工作目录自动设置为 workflow.yaml 所在目录
 - 这简化了项目管理，无需重复指定路径
 
