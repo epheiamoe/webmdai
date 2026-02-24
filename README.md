@@ -36,6 +36,8 @@ pip install -e .
 
 ## 快速开始
 
+> 🚀 **零基础用户？先看 [5分钟快速上手](QUICKSTART.md)**
+
 ### 1. 配置LLM模型
 
 ```bash
@@ -95,14 +97,18 @@ webmdai llm batch -d ./articles --separate -t summarize -m gpt4
 ### 5. 工作流（自动化管道）
 
 ```bash
+# 交互式向导（推荐新手）
+webmdai workflow wizard
+
 # 查看可用模板
 webmdai workflow templates
 
 # 初始化工作流（从模板创建）
 webmdai workflow init translate-novel -o workflow.yaml
 
-# 运行工作流
-webmdai workflow run workflow.yaml
+# 运行工作流（自动推断工作目录）
+webmdai workflow run
+webmdai workflow run myproject/workflow.yaml  # 指定路径
 
 # 设置变量运行
 webmdai workflow run -v novel_name="我的小说" -v target_lang="简体中文"
@@ -350,6 +356,15 @@ webmdai model set-default <别名>
 
 #### 快速开始
 
+**新手推荐 - 使用向导：**
+
+```bash
+# 交互式向导，引导你完成配置
+webmdai workflow wizard
+```
+
+**手动配置：**
+
 ```bash
 # 1. 查看可用模板
 webmdai workflow templates
@@ -362,6 +377,32 @@ webmdai workflow init translate-novel -o workflow.yaml
 # 4. 运行工作流
 webmdai workflow run
 ```
+
+#### 命令说明
+
+**`webmdai workflow wizard`** - 交互式向导
+
+适合新手的引导式配置，会询问你的需求并自动创建配置文件。
+
+**`webmdai workflow run [WORKFLOW_FILE]`** - 运行工作流
+
+```bash
+# 运行当前目录的 workflow.yaml
+webmdai workflow run
+
+# 运行指定路径的工作流（自动推断工作目录为该文件所在目录）
+webmdai workflow run ./myproject/workflow.yaml
+
+# 指定工作目录（覆盖自动推断）
+webmdai workflow run workflow.yaml -d ./output
+
+# 运行时设置变量
+webmdai workflow run -v novel_name="我的小说"
+```
+
+**工作目录自动推断规则：**
+- 如果不指定 `-d` 参数，工作目录自动设置为 workflow.yaml 所在目录
+- 这简化了项目管理，无需重复指定路径
 
 #### 工作流配置格式
 

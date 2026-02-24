@@ -1,98 +1,155 @@
-# webmdai 快速开始指南
+# WebMDAI 5分钟快速上手
 
-## 安装
+> 零基础用户的入门指南，用最少的命令完成最常用的任务。
+
+## 场景 1: 我有一个网页链接，想翻译它
 
 ```bash
-# 从源码安装
-cd webmdai
-pip install -e .
+# 方式1: 使用向导（推荐新手）
+webmdai workflow wizard
+# 按提示输入链接和选择选项即可
+
+# 方式2: 手动创建（了解流程）
+# 1. 创建任务文件，写入链接
+echo "https://example.com/article" > TASK.md
+
+# 2. 初始化翻译工作流
+webmdai workflow init translate-novel -o workflow.yaml
+
+# 3. 运行
+webmdai workflow run
 ```
 
-## 5分钟上手
-
-### 第1步：配置LLM模型
+## 场景 2: 我有多个链接需要批量翻译
 
 ```bash
-# 添加你的OpenAI API密钥
-webmdai model add --name gpt4 --endpoint https://api.openai.com/v1 --model gpt-4 --key sk-your-key
+# 1. 创建任务文件，包含所有链接
+cat > TASK.md << 'EOF'
+# 我的翻译任务
 
-# 设为默认
-webmdai model set-default gpt4
+## 参考链接
+- [第一章](https://example.com/chapter1)
+- [第二章](https://example.com/chapter2)
+- [第三章](https://example.com/chapter3)
+EOF
 
-# 验证
-webmdai model list
+# 2. 初始化并运行
+webmdai workflow init translate-novel -o workflow.yaml
+webmdai workflow run
 ```
 
-### 第2步：爬取网页
+## 场景 3: 我已经有一个项目目录
 
 ```bash
-# 交互模式 - 按提示输入
+# 进入项目目录
+cd myproject
+
+# 创建任务文件（如果没有）
+echo "https://example.com/article" > TASK.md
+
+# 初始化工作流
+webmdai workflow init translate-novel -o workflow.yaml
+
+# 编辑 TASK.md 添加更多链接
+# 运行
+webmdai workflow run
+```
+
+## 场景 4: 我只想爬取网页，不需要翻译
+
+```bash
+# 交互式爬取（适合少量链接）
 webmdai fetch interactive
 
-# 或批量模式
-webmdai fetch batch -w "https://example.com/article" -n myarticle -st
-```
-
-### 第3步：处理文本
-
-```bash
-# 进入爬取结果目录
-cd myarticle
-
-# 删除广告等内容
-webmdai deal batch --re -f "\\[广告\\].*?\\[/广告\\]" -d .
-
-# 或交互模式
-webmdai deal interactive
-```
-
-### 第4步：LLM处理
-
-```bash
-# 翻译所有文章
-webmdai llm batch -d . --all -t translate
-
-# 或生成摘要
-webmdai llm batch -d . --all -t summarize
+# 批量爬取（适合大量链接）
+webmdai fetch from-task TASK.md
 ```
 
 ## 常用命令速查
 
 | 命令 | 说明 |
 |------|------|
-| `webmdai model list` | 列出模型 |
-| `webmdai model add --name X --endpoint Y --model Z --key K` | 添加模型 |
-| `webmdai fetch batch -w "url1,url2" -n taskname` | 批量爬取 |
-| `webmdai deal batch --text -f "old" -r "new" -d ./dir` | 文本替换 |
-| `webmdai deal batch --re -f "pattern" -r "replace" -d ./dir` | 正则替换 |
-| `webmdai llm batch -d ./dir --all -t translate` | 批量翻译 |
-| `webmdai llm batch -d ./dir --separate -t summarize` | 分别摘要 |
+| `webmdai workflow wizard` | 交互式向导，推荐新手 |
+| `webmdai workflow run` | 运行当前目录的 workflow.yaml |
+| `webmdai workflow run path/to/workflow.yaml` | 运行指定路径的工作流 |
+| `webmdai workflow templates` | 查看可用模板 |
+| `webmdai workflow init <模板名>` | 从模板创建工作流 |
+| `webmdai fetch from-task` | 从 TASK.md 爬取链接 |
 
-## 预设任务
+## 任务文件格式 (TASK.md)
 
-- `explain` - 解释技术文档
-- `translate` - 翻译为中文
-- `summarize` - 生成摘要
-- `abstract` - 提取要点
+```markdown
+# 任务名称
 
-## 获取帮助
+## 参考链接
+- [链接描述](https://example.com)
+- [另一个链接](https://example2.com)
 
-```bash
-webmdai --help
-webmdai fetch --help
-webmdai deal --help
-webmdai llm --help
-webmdai model --help
+## 说明
+这里可以写任何备注...
 ```
 
-## 配置文件
+## 首次使用必看
 
-位置: `~/.webmdai/config.json`
+### 1. 配置LLM模型（只需一次）
 
-支持环境变量: `$ENV_VAR_NAME`
+```bash
+# 添加OpenAI兼容的API
+webmdai model add --name mymodel \
+    --endpoint https://api.openai.com/v1 \
+    --model gpt-4 \
+    --key your-api-key
+
+# 设为默认
+webmdai model set-default mymodel
+```
+
+### 2. 验证安装
+
+```bash
+# 查看帮助
+webmdai --help
+
+# 查看工作流帮助
+webmdai workflow --help
+```
+
+### 3. 快速测试
+
+```bash
+# 创建测试目录
+mkdir test_project && cd test_project
+
+# 创建任务文件
+echo "https://example.com" > TASK.md
+
+# 使用向导创建配置
+webmdai workflow wizard
+# 按提示选择选项
+
+# 运行
+webmdai workflow run
+```
+
+## 常见问题
+
+### Q: 运行后文件在哪里？
+A: 工作流会在工作目录下创建 `output/` 文件夹，所有输出都在里面。
+
+### Q: 如何修改翻译提示词？
+A: 编辑 `workflow.yaml` 文件，找到 `llm` 阶段的 `prompt_template` 或 `prompt_file`。
+
+### Q: 如何添加更多链接？
+A: 编辑 `TASK.md` 文件，按格式添加链接后重新运行 `webmdai workflow run`。
+
+### Q: 如何只爬取不翻译？
+A: 编辑 `workflow.yaml`，将 `llm` 阶段的 `enabled` 设为 `false`。
+
+### Q: 工作流文件找不到？
+A: 使用向导模式或运行 `webmdai workflow init translate-novel` 创建。
 
 ## 下一步
 
-- 查看 [README.md](README.md) 获取完整文档
-- 查看 [examples.md](examples.md) 获取更多示例
-- 查看 [DEVELOPMENT.md](DEVELOPMENT.md) 了解开发细节
+- 阅读 [完整文档](README.md) 了解所有功能
+- 查看 [工作流模板](workflow.example.yaml) 学习高级用法
+- 运行 `webmdai workflow templates` 查看所有可用模板

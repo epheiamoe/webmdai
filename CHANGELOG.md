@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # 
 
+## [0.3.0] - 2026-02-24
+
+### Added
+
+- **Workflow Wizard Mode** - Interactive guided setup for beginners
+  - `webmdai workflow wizard` command for step-by-step configuration
+  - Automatically creates TASK.md and workflow.yaml
+  - Supports translation, summarization, and custom workflow scenarios
+
+- **Configuration Validation** - Robust workflow config validation
+  - Validates required fields: `name`, `stages`
+  - Validates each stage has required `type` and `name` fields
+  - Checks stage type validity and error handling strategies
+  - Clear error messages for configuration issues
+
+- **Smart Error Suggestions** - Intelligent workflow file detection
+  - When workflow file not found, suggests available workflow files
+  - Searches current directory and subdirectories for workflow*.yaml files
+  - Provides actionable hints to run the correct command
+
+- **5-Minute Quick Start Guide** - `QUICKSTART.md` for zero-experience users
+  - Scenario-based tutorials (single URL, multiple URLs, existing projects)
+  - Common commands cheat sheet
+  - FAQ section for first-time users
+
+### Changed
+
+- **Simplified Path Logic** - Auto-detect working directory
+  - `workflow run <file>` automatically sets working directory to file's location
+  - `--directory` changed to `--working-dir` with clearer semantics
+  - No need to specify paths twice when running project workflows
+  - Override with `-d` only when needed for custom output directories
+
+### Improved
+
+- Better CLI help messages with usage examples
+- Enhanced workflow run command documentation
+- README.md updated with wizard mode and path logic explanations
+
 ## [0.2.0] - 2026-02-23
 
 ### Added

@@ -952,27 +952,65 @@ def workflow_cmd():
 
 @workflow_cmd.command(name="run")
 @click.argument('workflow_file', required=False, default='workflow.yaml')
-@click.option('-d', '--directory', default='.', help='工作目录')
+@click.option('-d', '--working-dir', help='工作/产物目录 (默认: workflow.yaml 所在目录)')
 @click.option('-v', '--variable', multiple=True, help='设置变量 (key=value)')
 @pass_context
-def workflow_run(ctx, workflow_file, directory, variable):
+def workflow_run(ctx, workflow_file, working_dir, variable):
     """运行工作流配置文件
     
     WORKFLOW_FILE: 工作流配置文件路径 (默认: workflow.yaml)
+                   支持相对路径或绝对路径
+    
+    示例:
+        webmdai workflow run                    # 运行当前目录的 workflow.yaml
+        webmdai workflow run myproject/workflow.yaml  # 自动设置工作目录为 myproject/
+        webmdai workflow run -d ./output        # 指定产物输出目录
     """
     from pathlib import Path
     import yaml
     
-    from .models.workflow import WorkflowConfig, StageConfig, StageType
+    from .models.workflow import WorkflowConfig, StageConfig, StageType, validate_workflow_config
     from .modules.workflow_engine import WorkflowEngine
     
-    work_dir = Path(directory).resolve()
-    workflow_path = work_dir / workflow_file
+    # 解析工作流文件路径
+    workflow_path = Path(workflow_file)
+    if not workflow_path.is_absolute():
+        workflow_path = Path.cwd() / workflow_path
+    workflow_path = workflow_path.resolve()
     
+    # 智能错误提示：如果文件不存在，搜索可能的工作流文件
     if not workflow_path.exists():
         print(f"{Fore.RED}工作流文件不存在: {workflow_path}{Style.RESET_ALL}")
-        print(f"{Fore.YELLOW}使用 'webmdai workflow init' 创建示例工作流{Style.RESET_ALL}")
+        
+        # 搜索可能的工作流文件（只在当前目录及其子目录中搜索）
+        try:
+            candidates = list(Path('.').rglob('workflow*.yaml')) + list(Path('.').rglob('workflow*.yml'))
+            # 过滤掉__pycache__等目录中的文件
+            candidates = [c for c in candidates if '__pycache__' not in str(c)]
+        except Exception:
+            candidates = []
+        
+        if candidates:
+            print(f"\n{Fore.YELLOW}是否想用这些文件？{Style.RESET_ALL}")
+            for i, c in enumerate(candidates[:5], 1):
+                try:
+                    rel_path = c.relative_to(Path.cwd())
+                    print(f"  {i}. {rel_path}")
+                except ValueError:
+                    print(f"  {i}. {c}")
+            print(f"\n{Fore.CYAN}提示: 运行 'webmdai workflow run <文件路径>'{Style.RESET_ALL}")
+        else:
+            print(f"\n{Fore.YELLOW}使用 'webmdai workflow init' 创建示例工作流{Style.RESET_ALL}")
         return
+    
+    # 自动推断工作目录：使用 workflow.yaml 所在目录
+    if working_dir:
+        work_dir = Path(working_dir).resolve()
+    else:
+        work_dir = workflow_path.parent
+    
+    print(f"{Fore.CYAN}工作流: {workflow_path.name}{Style.RESET_ALL}")
+    print(f"{Fore.CYAN}工作目录: {work_dir}{Style.RESET_ALL}\n")
     
     # 解析变量
     variables = {}
@@ -985,6 +1023,19 @@ def workflow_run(ctx, workflow_file, directory, variable):
     try:
         with open(workflow_path, 'r', encoding='utf-8') as f:
             config_dict = yaml.safe_load(f)
+        
+        # 验证配置完整性
+        if config_dict is None:
+            print(f"{Fore.RED}工作流文件为空或格式错误{Style.RESET_ALL}")
+            return
+        
+        from .models.workflow import validate_workflow_config, WorkflowValidationError
+        try:
+            validate_workflow_config(config_dict)
+        except WorkflowValidationError as e:
+            print(f"{Fore.RED}配置验证失败: {e}{Style.RESET_ALL}")
+            print(f"\n{Fore.YELLOW}配置文件: {workflow_path}{Style.RESET_ALL}")
+            return
         
         # 构建配置对象
         stages = []
@@ -1069,6 +1120,148 @@ def workflow_templates():
         print(f"{Fore.YELLOW}{name}{Style.RESET_ALL}")
         print(f"  {desc}")
         print()
+
+
+@workflow_cmd.command(name="wizard")
+@pass_context
+def workflow_wizard(ctx):
+    """交互式向导 - 引导你创建工作流配置"""
+    import yaml
+    from pathlib import Path
+    from .models.workflow import get_workflow_template, WORKFLOW_TEMPLATES
+    
+    print(f"{Fore.CYAN}=== WebMDAI 工作流向导 ==={Style.RESET_ALL}\n")
+    print("我会引导你创建工作流配置文件。\n")
+    
+    # 步骤1: 选择使用场景
+    print(f"{Fore.YELLOW}你想做什么？{Style.RESET_ALL}")
+    print("  1. 翻译网页内容（如轻小说、文章）")
+    print("  2. 生成文章摘要")
+    print("  3. 创建自定义工作流")
+    
+    choice = ""
+    while choice not in ['1', '2', '3']:
+        choice = input(f"\n选择 (1-3): ").strip()
+        if choice not in ['1', '2', '3']:
+            print(f"{Fore.RED}无效选择，请输入 1、2 或 3{Style.RESET_ALL}")
+    
+    # 根据选择设置模板和任务
+    if choice == '1':
+        template_name = 'translate-novel'
+        task_type = 'translate'
+        default_output = 'workflow.yaml'
+    elif choice == '2':
+        template_name = 'summarize-articles'
+        task_type = 'summarize'
+        default_output = 'workflow.yaml'
+    else:
+        template_name = 'custom-pipeline'
+        task_type = 'custom'
+        default_output = 'workflow.yaml'
+    
+    # 步骤2: 输入URL或选择已有任务文件
+    print(f"\n{Fore.YELLOW}输入你的网页链接:{Style.RESET_ALL}")
+    print("  (每行一个链接，输入空行结束)")
+    
+    urls = []
+    while True:
+        url = input("> ").strip()
+        if not url:
+            break
+        is_valid, error = validate_url(url)
+        if is_valid:
+            urls.append(url)
+            print(f"  {Fore.GREEN}✓{Style.RESET_ALL} 已添加")
+        else:
+            print(f"  {Fore.RED}✗{Style.RESET_ALL} {error}")
+    
+    # 步骤3: 任务名称（用于文件夹名）
+    print(f"\n{Fore.YELLOW}输入任务名称:{Style.RESET_ALL}")
+    print("  (这将作为输出文件夹的名称)")
+    
+    task_name = ""
+    while not task_name:
+        task_name = input("> ").strip()
+        if not task_name:
+            print(f"{Fore.RED}任务名称不能为空{Style.RESET_ALL}")
+        else:
+            is_valid, error = validate_task_name(task_name)
+            if not is_valid:
+                print(f"{Fore.RED}{error}{Style.RESET_ALL}")
+                task_name = ""
+    
+    # 步骤4: 选择输出语言（仅翻译场景）
+    if choice == '1':
+        print(f"\n{Fore.YELLOW}选择输出语言:{Style.RESET_ALL}")
+        print("  1. 简体中文")
+        print("  2. 繁体中文")
+        print("  3. English")
+        print("  4. 其他")
+        
+        lang_choice = ""
+        while lang_choice not in ['1', '2', '3', '4']:
+            lang_choice = input("\n选择 (1-4): ").strip()
+        
+        languages = {'1': '简体中文', '2': '繁体中文', '3': 'English', '4': '其他'}
+        target_lang = languages[lang_choice]
+    else:
+        target_lang = None
+    
+    # 步骤5: 配置文件输出路径
+    print(f"\n{Fore.YELLOW}配置文件输出路径:{Style.RESET_ALL}")
+    output = input(f"  (默认: {default_output}): ").strip() or default_output
+    
+    output_path = Path(output)
+    if output_path.exists():
+        confirm = input(f"{Fore.YELLOW}文件 {output} 已存在，覆盖吗? (y/N): {Style.RESET_ALL}")
+        if confirm.lower() != 'y':
+            print("已取消")
+            return
+    
+    # 创建TASK.md文件（如果有URL）
+    task_md_path = output_path.parent / "TASK.md" if output_path.parent != Path('.') else Path("TASK.md")
+    if urls and not task_md_path.exists():
+        task_md_content = f"# {task_name}\n\n"
+        task_md_content += "## 参考链接\n\n"
+        for url in urls:
+            task_md_content += f"- [{url}]({url})\n"
+        
+        with open(task_md_path, 'w', encoding='utf-8') as f:
+            f.write(task_md_content)
+        print(f"\n{Fore.GREEN}✓{Style.RESET_ALL} 已创建任务文件: {task_md_path}")
+    
+    # 获取并自定义模板
+    tmpl = get_workflow_template(template_name).copy()
+    
+    # 根据用户输入自定义模板
+    tmpl['name'] = task_name
+    if target_lang:
+        tmpl['description'] = f"{task_name} - 翻译为{target_lang}"
+    else:
+        tmpl['description'] = f"{task_name}"
+    
+    # 如果用户提供了URL，修改fetch阶段的taskfile
+    if urls and tmpl.get('stages'):
+        for stage in tmpl['stages']:
+            if stage.get('type') == 'fetch':
+                stage['params']['taskfile'] = str(task_md_path)
+                break
+    
+    # 保存工作流配置
+    with open(output_path, 'w', encoding='utf-8') as f:
+        yaml.dump(tmpl, f, allow_unicode=True, sort_keys=False)
+    
+    print(f"{Fore.GREEN}✓{Style.RESET_ALL} 已创建工作流配置: {output_path}")
+    
+    # 显示完成信息
+    print(f"\n{Fore.CYAN}=== 准备就绪！==={Style.RESET_ALL}")
+    print(f"\n下一步：")
+    if output_path.parent != Path('.'):
+        print(f"  1. cd {output_path.parent}")
+        print(f"  2. webmdai workflow run")
+    else:
+        print(f"  运行: webmdai workflow run")
+    print(f"\n{Fore.YELLOW}提示: 编辑 {output_path} 可以自定义工作流配置{Style.RESET_ALL}")
 
 
 # ========== 帮助 ==========

@@ -145,3 +145,85 @@ def get_workflow_template(name: str) -> Optional[Dict[str, Any]]:
 def list_workflow_templates() -> Dict[str, str]:
     """列出所有工作流模板"""
     return {k: v["description"] for k, v in WORKFLOW_TEMPLATES.items()}
+
+
+class WorkflowValidationError(Exception):
+    """工作流配置验证错误"""
+    pass
+
+
+def validate_workflow_config(config_dict: dict) -> None:
+    """验证工作流配置完整性
+    
+    Args:
+        config_dict: 从YAML加载的配置字典
+        
+    Raises:
+        WorkflowValidationError: 配置验证失败
+    """
+    if not isinstance(config_dict, dict):
+        raise WorkflowValidationError("工作流配置必须是字典类型")
+    
+    # 验证必需字段
+    required = ['name', 'stages']
+    for field in required:
+        if field not in config_dict:
+            raise WorkflowValidationError(f"缺少必需字段: {field}")
+    
+    # 验证name字段
+    if not config_dict['name'] or not isinstance(config_dict['name'], str):
+        raise WorkflowValidationError("name 字段必须是非空字符串")
+    
+    # 验证stages字段
+    stages = config_dict.get('stages', [])
+    if not isinstance(stages, list):
+        raise WorkflowValidationError("stages 必须是列表类型")
+    
+    if not stages:
+        raise WorkflowValidationError("stages 列表不能为空，至少需要一个阶段")
+    
+    # 验证每个阶段
+    valid_stage_types = {t.value for t in StageType}
+    
+    for i, stage in enumerate(stages, 1):
+        if not isinstance(stage, dict):
+            raise WorkflowValidationError(f"阶段 {i} 必须是字典类型")
+        
+        # 验证必需字段
+        if 'type' not in stage:
+            raise WorkflowValidationError(f"阶段 {i} 缺少 type 字段")
+        if 'name' not in stage:
+            raise WorkflowValidationError(f"阶段 {i} 缺少 name 字段")
+        
+        # 验证type字段
+        stage_type = stage.get('type')
+        if stage_type not in valid_stage_types:
+            raise WorkflowValidationError(
+                f"阶段 {i} 的 type '{stage_type}' 无效，有效值: {', '.join(valid_stage_types)}"
+            )
+        
+        # 验证name字段
+        if not stage.get('name') or not isinstance(stage['name'], str):
+            raise WorkflowValidationError(f"阶段 {i} 的 name 必须是非空字符串")
+        
+        # 验证on_error字段
+        on_error = stage.get('on_error', 'stop')
+        if on_error not in ('stop', 'skip', 'ignore'):
+            raise WorkflowValidationError(
+                f"阶段 {i} 的 on_error '{on_error}' 无效，有效值: stop, skip, ignore"
+            )
+        
+        # 验证params字段
+        params = stage.get('params', {})
+        if not isinstance(params, dict):
+            raise WorkflowValidationError(f"阶段 {i} 的 params 必须是字典类型")
+    
+    # 验证settings字段（如果存在）
+    settings = config_dict.get('settings', {})
+    if not isinstance(settings, dict):
+        raise WorkflowValidationError("settings 必须是字典类型")
+    
+    # 验证variables字段（如果存在）
+    variables = config_dict.get('variables', {})
+    if not isinstance(variables, dict):
+        raise WorkflowValidationError("variables 必须是字典类型")
