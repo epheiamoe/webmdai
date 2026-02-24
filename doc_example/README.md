@@ -45,8 +45,21 @@
 ### 路径规则（重要！）
 **所有文件都放在同一个目录下**，相对路径才有效！
 - 进入项目目录：`cd /path/to/your/project`
-- 所有文件创建在这里
+- 所有文件都创建在这里
 - 运行命令也在这里
+
+### 路径调试工具
+遇到路径问题？使用 `webmdai path` 命令：
+```bash
+# 查看路径解析信息
+webmdai path info workflow.yaml
+
+# 检查工作流中所有路径
+webmdai path check workflow.yaml
+
+# 查看项目目录结构
+webmdai path tree
+```
 
 ## 🔍 如何查找需要的示例？
 
