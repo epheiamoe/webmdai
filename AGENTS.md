@@ -1,96 +1,232 @@
-# WebMDAI 项目 - Agent 经验教训
+# AGENTS.md - AI Agent 开发指南
 
-> 这是Kimi code cli创建的文件，我觉得很有意思就留着了。
-
-## 严重事故记录
-
-### 事故 #1：误删用户数据
-
-**时间**: 2026-02-23  
-**责任人**: AI Agent (Kimi Code CLI)  
-**严重程度**: 🔴 严重
-
-#### 事故经过
-
-在帮助用户清理项目并推送到 GitHub 时，误删了用户桌面上的轻小说翻译文件夹 `TASK/`，包含 43 章已翻译的内容。
-
-**原因**:
-
-1. 之前在测试工作流功能时创建了测试用的 `TASK` 目录
-2. 误以为该目录是测试生成的临时文件
-3. 使用了 `Remove-Item -Recurse -Force TASK` 命令删除
-4. 没有先确认目录内容是否重要
-
-**后果**:
-
-- 用户 43 章轻小说翻译文件丢失
-- PowerShell rm 命令不经过回收站，无法恢复
-- 用户需要重新爬取和翻译
-
-#### 教训
-
-1. **永远不要假设文件不重要** - 即使看起来是临时文件，也可能包含用户数据
-2. **删除前必须确认** - 询问用户、列出目录内容、确认后再操作
-3. **优先使用移动而非删除** - 将文件移动到归档目录，而非直接删除
-4. **了解命令行为** - PowerShell 的 rm 不经过回收站，与文件资源管理器不同
-
-#### 整改措施
-
-1. ✅ 建立归档机制 - 所有删除操作改为移动到 `E:\Agent\files\archive\temp`
-2. ✅ 禁止直接使用 rm/Remove-Item - 统一使用移动操作
-3. ✅ 删除前二次确认 - 对于任何可能包含数据的目录
-4. ✅ 创建 AGENTS.md - 记录教训，提醒未来 Agent
+> 本文件为 AI Agent 提供项目维护和开发指导
 
 ---
 
-## 开发规范
+## 项目概览
 
-### 文件操作规范
+### 仓库用途
+WebMDAI - 一个纯 AI 开发的 Python 命令行工具，提供网页内容爬取、文本处理和 LLM 处理功能。
 
-✅ **应该做**:
+### 技术栈
+- **语言**: Python 3.8+
+- **核心依赖**: requests, beautifulsoup4, click, pyyaml, python-dotenv
+- **测试**: pytest
+- **CLI框架**: Click
 
-- 移动文件到归档目录而非删除
-- 操作前备份重要数据
-- 列出目录内容确认后再批量操作
-- 使用 `Test-Path` 确认文件/目录存在
-
-❌ **禁止做**:
-
-- 直接使用 `rm`, `Remove-Item`, `rmdir` 等删除命令
-- 使用 `-Force` 参数强制删除而不确认
-- 假设任何文件是"临时"或"可以删除的"
-- 在不清楚内容的情况下删除整个目录
-
-## 命令使用指南
-
-### 危险命令（需要额外确认）
-
-| 命令                   | 危险等级 | 替代方案              |
-| -------------------- | ---- | ----------------- |
-| `rm`, `Remove-Item`  | 🔴 高 | `Move-Item` 到归档目录 |
-| `rmdir`, `rd`        | 🔴 高 | `Move-Item` 到归档目录 |
-| `>` 重定向覆盖            | 🟡 中 | 先备份原文件            |
-| `mv`, `Move-Item` 覆盖 | 🟡 中 | 检查目标是否存在          |
-
-## 用户数据保护
-
-### 常见用户数据位置
-
-- `C:\Users\<用户名>\Desktop\` - 桌面文件
-- `C:\Users\<用户名>\Documents\` - 文档
-- `C:\Users\<用户名>\Downloads\` - 下载
-- 任何包含以下名称的目录：
-  - `novel`, `book`, `translation`, `work`, `project`
-  - `TASK`, `task`, `temp`, `tmp`, `backup`
-
-### 处理原则
-
-1. **默认所有文件都重要** - 直到被证明是临时文件
-2. **先询问再操作** - 特别是删除操作
-3. **保留备份** - 修改前创建备份
-4. **可恢复性** - 使用移动而非删除，保留恢复可能
+### 目标用户
+- 需要批量处理网页内容的开发者
+- 轻小说翻译爱好者
+- 需要自动化文本处理流程的用户
 
 ---
 
-*最后更新: 2026-02-23*  
-*创建原因: 记录误删用户数据事故，防止再次发生*
+## 构建与部署
+
+### 安装
+```bash
+# 源码安装
+pip install -e .
+
+# 开发模式安装
+pip install -e ".[dev]"
+```
+
+### 开发
+```bash
+# 运行测试
+python -m pytest webmdai/tests/ -v
+
+# 带覆盖率测试
+python -m pytest --cov=webmdai webmdai/tests/
+```
+
+### 构建
+```bash
+# 构建发布包
+python setup.py sdist bdist_wheel
+```
+
+---
+
+## 代码规范
+
+### 风格指南
+- 使用 Python 标准风格（PEP 8）
+- 行长度限制：100 字符
+- 使用 Black 格式化：`black webmdai/`
+- 使用 Flake8 检查：`flake8 webmdai/`
+
+### 命名约定
+- **模块**: 小写字母 + 下划线 (snake_case)
+- **类**: 首字母大写 (PascalCase)
+- **函数/变量**: 小写字母 + 下划线 (snake_case)
+- **常量**: 全大写 + 下划线 (UPPER_SNAKE_CASE)
+
+### 文件组织
+```
+webmdai/
+├── cli.py              # 命令行入口
+├── config.py           # 配置管理
+├── models/             # 数据模型
+│   ├── fetch_result.py
+│   ├── llm_task.py
+│   └── workflow.py
+├── modules/            # 功能模块
+│   ├── fetcher.py      # 爬取模块
+│   ├── processor.py    # 文本处理
+│   ├── llm_handler.py  # LLM处理
+│   ├── content_cleaner.py  # 内容清理
+│   ├── git_handler.py  # Git管理
+│   └── workflow_engine.py  # 工作流引擎
+├── utils/              # 工具函数
+│   ├── file_utils.py
+│   └── validators.py
+└── tests/              # 单元测试
+```
+
+---
+
+## 架构说明
+
+### 目录结构
+- **cli.py**: Click 框架实现的命令行入口
+- **config.py**: 单例模式的配置管理
+- **models/**: 数据模型定义
+- **modules/**: 核心功能模块
+- **utils/**: 通用工具函数
+
+### 模块边界
+- `fetcher`: 网页内容爬取，支持多种 Reader
+- `processor`: 文本批量处理
+- `llm_handler`: LLM API 调用封装
+- `content_cleaner`: 网页内容清理
+- `workflow_engine`: 工作流执行引擎
+
+### 关键抽象
+- `BaseReader`: 爬虫抽象基类
+- `BaseLLMClient`: LLM 客户端抽象基类
+- `StageConfig`: 工作流阶段配置
+- `WorkflowContext`: 工作流执行上下文
+
+---
+
+## 测试策略
+
+### 测试框架
+- **框架**: pytest
+- **覆盖率**: pytest-cov
+- **测试文件位置**: `webmdai/tests/`
+
+### 测试文件命名
+- `test_<模块名>.py`
+
+### 运行方式
+```bash
+# 运行所有测试
+python -m pytest webmdai/tests/ -v
+
+# 运行特定模块测试
+python -m pytest webmdai/tests/test_config.py -v
+
+# 生成覆盖率报告
+python -m pytest --cov=webmdai webmdai/tests/ --cov-report=html
+```
+
+---
+
+## 权限边界
+
+### 允许的操作 ✅
+- 修改现有代码文件和测试
+- 添加新的测试用例
+- 更新文档（README.md, CHANGELOG.md, doc_example/）
+- 创建新的工具模块
+- 提交代码到版本控制
+
+### 禁止的操作 ❌
+- 自动安装依赖（需用户确认）
+- 强制 git push 到远程仓库
+- 删除重要文件或历史记录
+- 修改 LICENSE 或 AGENTS.md 核心规则
+- 在未测试的情况下修改核心功能
+
+### 需要用户确认的操作 ⚠️
+- 修改项目依赖版本
+- 重构核心模块架构
+- 修改测试框架配置
+- 发布新版本
+
+---
+
+## 常用命令
+
+### 开发相关
+```bash
+# 安装
+pip install -e .
+
+# 测试
+python -m pytest webmdai/tests/ -v
+
+# 代码检查
+flake8 webmdai/
+black --check webmdai/
+```
+
+### 运行命令
+```bash
+# 查看帮助
+webmdai --help
+
+# 爬取网页
+webmdai fetch from-task TASK.md
+
+# 处理文本
+webmdai deal batch --text -f "old" -r "new" -d ./docs
+
+# LLM处理
+webmdai llm batch -d ./articles --all -t translate
+
+# 运行工作流
+webmdai workflow run workflow.yaml
+
+# 路径调试
+webmdai path check workflow.yaml
+webmdai path tree
+```
+
+---
+
+## 版本管理
+
+### 版本号规则
+遵循 Semantic Versioning (SemVer)
+- MAJOR: 不兼容的 API 变更
+- MINOR: 向后兼容的新功能
+- PATCH: 向后兼容的 bug 修复
+
+### 提交信息规范
+```
+<类型>: <简短描述>
+
+[可选的详细描述]
+```
+
+类型包括: feat, fix, docs, test, refactor, chore
+
+### 发布流程
+1. 更新 CHANGELOG.md
+2. 提交版本更新
+3. 创建 Git tag: `git tag v0.x.x`
+4. 用户确认后 push
+
+---
+
+## 注意事项
+
+1. **路径问题**: 所有相对路径相对于工作流文件所在目录
+2. **配置位置**: 用户配置在 `~/.webmdai/config.json`
+3. **环境变量**: 支持在配置中使用 `$ENV_VAR` 引用环境变量
+4. **测试优先**: 修改代码前先确保测试通过
